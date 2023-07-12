@@ -57,7 +57,6 @@ for i, dataset in enumerate(datasets):
 df = pd.concat(dfs)
 
 
-one_hot_encoded_sequences = pd.get_dummies(df.peptide, prefix="seq")
 
 
 
@@ -65,6 +64,10 @@ one_hot_encoded_sequences = pd.get_dummies(df.peptide, prefix="seq")
 from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
+def one_hot_encoding_aminoacid(df):
+    one_hot_encoded_sequences = pd.get_dummies(df.peptide, prefix="seq")
+    return one_hot_encoded_sequences
+    
 def one_hot_encoding_count(df):
     return pd.DataFrame([ProteinAnalysis(i).count_amino_acids() for i in df["peptide"]])
 
@@ -75,7 +78,7 @@ def one_hot_encoding_positional(df):
 
 by_count = one_hot_encoding_count(df)
 by_position = one_hot_encoding_positional(df)
-
+one_hot_encoded_sequences = one_hot_encoding_aminoacid(df)
 
 features = pd.concat([one_hot_encoded_sequences, df[["feature1", "feature2"]]], axis=1)
 
