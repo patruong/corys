@@ -65,7 +65,12 @@ def qc(labeled_df, unlabeled_df):
     check2 = sum(labeled_df["ClogP"] == unlabeled_df["ClogP"])== len(labeled_df)
     check3 = sum(labeled_df["charge"] == unlabeled_df["charge"])== len(labeled_df)
     check4 = sum(labeled_df["BB Index"] == unlabeled_df["BB Index"])== len(labeled_df)
-    return check1+check2+check3+check4
+    check5 = sum(unlabeled_df["positive peptides"] == labeled_df["positive peptides"]) == len(labeled_df)
+    check6 = sum(unlabeled_df["negative peptides"] == labeled_df["negative peptides"]) == len(labeled_df)
+    #check7 = sum(unlabeled_df["# of carbon added"] == labeled_df["# of carbon added"]) == len(labeled_df)
+    #check7 = sum(unlabeled_df["label_frequency"] == labeled_df["label_frequency"]) == len(labeled_df)
+
+    return check1+check2+check3+check4+check5+check6
 
 def log2_values(df):
     df["log2_intensity"] = np.log2(df["intensity"])
@@ -122,13 +127,55 @@ def compute_log2_ratio_increase_succeeding(labeled_df, unlabeled_df):
 def compute_signal_enhancement(labeled_df, unlabeled_df):
     df = pd.DataFrame()
     # Check so that index are the same!!!
-    if qc(labeled_df, unlabeled_df):
+    if qc(labeled_df, unlabeled_df) == 6:
         df["Gravy Score"] = labeled_df["Gravy Score"]
         df["ClogP"] = labeled_df["ClogP"]
         df["charge"] = labeled_df["charge"]
         df["BB Index"] = labeled_df["BB Index"]
+        
+        # rt
         df["unlabeled_rt"] = unlabeled_df["rt"]
         df["labeled_rt"] = labeled_df["rt"]
+        
+        df["unlabeled_preceding_ecoli_rt"] = unlabeled_df["preceding Ecoli rt"]
+        df["labeled_preceding_ecoli_rt"] = labeled_df["preceding Ecoli rt"]
+        
+        df["unlabeled_succeeding_ecoli_rt"] = unlabeled_df["succeeding Ecoli rt"]
+        df["labeled_succeeding_ecoli_rt"] = labeled_df["succeeding Ecoli rt"]
+        
+        # features from labeled_df
+        df["labeled_label_frequency"] = labeled_df["label_frequency"]
+        df["labeled_label_frequency"] = df.labeled_label_frequency.map(lambda x:float(x.replace(",",".")))
+
+        df["labeled_#_of_carbon_added"] = labeled_df["# of carbon added"]
+
+        # mass and mz
+        df["unlabeled_mass"] = unlabeled_df["mass"]
+        df["labeled_mass"] = labeled_df["mass"]
+        
+        df["unlabeled_mz"] = unlabeled_df["mz"]
+        df["labeled_mz"] = labeled_df["mz"]
+        
+        # intensity
+        df["unlabeled_intensity"] = unlabeled_df["intensity"]
+        df["labeled_intensity"] = labeled_df["intensity"]
+        
+        df["unlabeled_log2_intensity"] = unlabeled_df["log2_intensity"]
+        df["labeled_log2_intensity"] = labeled_df["log2_intensity"]
+         
+        df["unlabeled_preceding_ecoli_log2_intensity"] = unlabeled_df["log2_preceding_Ecoli_int"]
+        df["labeled_preceding_ecoli_log2_intensity"] = labeled_df["log2_preceding_Ecoli_int"]
+        
+        df["unlabeled_succeeding_ecoli_log2_intensity"] = unlabeled_df["log2_succeeding_Ecoli_int"]
+        df["labeled_succeeding_ecoli_log2_intensity"] = labeled_df["log2_succeeding_Ecoli_int"]        
+        
+        df["unlabeled_preceding_ecoli_intensity"] = unlabeled_df["preceding Ecoli int"]
+        df["labeled_preceding_ecoli_intensity"] = labeled_df["preceding Ecoli int"]
+ 
+        df["unlabeled_succeeding_ecoli_intensity"] = unlabeled_df["succeeding Ecoli int"]
+        df["labeled_succeeding_ecoli_intensity"] = labeled_df["succeeding Ecoli int"]
+ 
+    
         df["charge"] = labeled_df["charge"]
         df["length"] = labeled_df.peptide.map(lambda x:len(x))
         
@@ -145,6 +192,55 @@ def compute_signal_enhancement(labeled_df, unlabeled_df):
         return 0    
 
 
+def add_derived_ratios(df):
+    # derived ratios 
+    
+    # intensity within
+    # labeled HEK / E.Coli
+    df["deriv_labeled_intensity_preceding_HEK_EColi_ratio"] = df["labeled_intensity"] / df["labeled_preceding_ecoli_intensity"]
+    df["deriv_labeled_intensity_succeeding_HEK_EColi_ratio"] = df["labeled_intensity"] / df["labeled_succeeding_ecoli_intensity"]
+    df["deriv_labeled_intensity_preceding_HEK_EColi_log2_ratio"] = df["labeled_log2_intensity"] / df["labeled_preceding_ecoli_log2_intensity"]
+    df["deriv_labeled_intensity_succeeding_HEK_EColi_log2_ratio"] = df["labeled_log2_intensity"] / df["labeled_succeeding_ecoli_log2_intensity"]
+    
+    # unlabeled E.Coli / HEK
+    df["deriv_unlabeled_intensity_preceding_HEK_EColi_ratio"] = df["unlabeled_intensity"] / df["unlabeled_preceding_ecoli_intensity"]
+    df["deriv_unlabeled_intensity_succeeding_HEK_EColi_ratio"] = df["unlabeled_intensity"] / df["unlabeled_succeeding_ecoli_intensity"]
+    df["deriv_unlabeled_intensity_preceding_HEK_EColi_log2_ratio"] = df["unlabeled_log2_intensity"] / df["unlabeled_preceding_ecoli_log2_intensity"]
+    df["deriv_unlabeled_intensity_succeeding_HEK_EColi_log2_ratio"] = df["unlabeled_log2_intensity"] / df["unlabeled_succeeding_ecoli_log2_intensity"]
+    
+    # rt within
+    df["deriv_within_unlabeled_preceding_delta_rt"] = df["unlabeled_rt"] - df["unlabeled_preceding_ecoli_rt"]
+    df["deriv_within_unlabeled_preceding_rt_ratio"] = df["unlabeled_rt"] / df["unlabeled_preceding_ecoli_rt"]
+    
+    df["deriv_within_unlabeled_succeeding_delta_rt"] = df["unlabeled_rt"] - df["unlabeled_succeeding_ecoli_rt"]
+    df["deriv_within_unlabeled_succeeding_rt_ratio"] = df["unlabeled_rt"] / df["unlabeled_succeeding_ecoli_rt"]
+    
+    df["deriv_within_unlabeled_preceding_delta_rt"] = df["labeled_rt"] - df["labeled_preceding_ecoli_rt"]
+    df["deriv_within_unlabeled_preceding_rt_ratio"] = df["labeled_rt"] / df["labeled_preceding_ecoli_rt"]
+    
+    df["deriv_within_unlabeled_succeeding_delta_rt"] = df["labeled_rt"] - df["labeled_succeeding_ecoli_rt"]
+    df["deriv_within_unlabeled_succeeding_rt_ratio"] = df["labeled_rt"] / df["labeled_succeeding_ecoli_rt"]
+    
+    # rt between
+    df["deriv_preceding_delta_rt"] = df["labeled_preceding_ecoli_rt"] - df["unlabeled_preceding_ecoli_rt"]
+    df["deriv_preceding_ratio_rt"] = df["labeled_preceding_ecoli_rt"] / df["unlabeled_preceding_ecoli_rt"]
+    
+    df["deriv_succeeding_delta_rt"] = df["labeled_succeeding_ecoli_rt"] - df["unlabeled_succeeding_ecoli_rt"]
+    df["deriv_succeeding_ratio_rt"] = df["labeled_succeeding_ecoli_rt"] / df["unlabeled_succeeding_ecoli_rt"]
+    
+    df["deriv_delta_rt"] = df["labeled_rt"] - df["unlabeled_rt"]
+    df["deriv_ratio_rt"] = df["labeled_rt"] / df["unlabeled_rt"]
+   
+    # mass
+    df["deriv_ratio_mass"] = df["labeled_mass"] / df["unlabeled_mass"]
+    df["deriv_delta_mass"] = df["labeled_mass"] - df["unlabeled_mass"]
+
+    # mz
+    df["deriv_ratio_mz"] = df["labeled_mz"] / df["unlabeled_mz"]
+    df["deriv_delta_mz"] = df["labeled_mz"] - df["unlabeled_mz"]
+    
+    
+    return df
 
 files = ["C1", "C2", "C3", "C4", "C5", "C6"]
 ecoli_std = pd.read_csv("Processed_files/Control_files/ecoli_std.tsv", sep = "\t", index_col = 0)
@@ -164,9 +260,15 @@ for file in files:
     dfs.append(df)
 
 df = pd.concat(dfs)
+df = df.reindex(sorted(df.columns), axis=1)
+
+
 
 
 df.to_csv("summary.tsv", sep = "\t")
+df = add_derived_ratios(df)
+df.to_csv("summary_derived.tsv", sep = "\t")
+
 
 
 
