@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jul 11 18:02:25 2023
@@ -18,16 +18,16 @@ def plot_feature_importance(df, title="Feature importances", subplot_index=111, 
 
     if type(peptide_sequence_encoding) == pd.core.frame.DataFrame:
         peptide_sequence_encoding = peptide_sequence_encoding.reset_index().drop("index", axis = 1)
-        X = df.drop(["log10_lu_ratio", "peptide"], axis=1)#.values
+        X = df.drop(["preceding_log2_ratio_increase", "peptide_charge", "group"], axis=1)#.values
         X = X.reset_index().drop("index", axis = 1)
         X = pd.concat([X, peptide_sequence_encoding], axis = 1)
         feature_names = X.columns
         X = X.values
-        y = df["log10_lu_ratio"].values
+        y = df["preceding_log2_ratio_increase", "preceding_ratio_increase"].values
     else:
-        X = df.drop(["log10_lu_ratio", "peptide"], axis=1).values
-        feature_names = df.drop("log10_lu_ratio", axis=1).columns
-        y = df["log10_lu_ratio"].values
+        X = df.drop(["preceding_log2_ratio_increase", "preceding_ratio_increase", "peptide_charge", "group"], axis=1).values
+        feature_names = df.drop("preceding_log2_ratio_increase", axis=1).columns
+        y = df["preceding_log2_ratio_increase"].values
 
 
     # RANDOM FOREST
@@ -59,7 +59,7 @@ def plot_feature_importance(df, title="Feature importances", subplot_index=111, 
 
     if model == "xgboost":
         # Train the XGBoost regression model
-        model = xgb.XGBRegressor(n_estimators=100)
+        model = xgb.XGBRegressor(n_estimators=50)
         model.fit(X, y)
 
         # Get feature importances
@@ -121,20 +121,25 @@ for i, dataset in enumerate(datasets):
 
 df = pd.concat(dfs)
 
+df = pd.read_csv("summary.tsv", sep = "\t", usecols = [0,1,2,3,4,5,6,7,8,9,10,14])
+#df = pd.read_csv("summary.tsv", sep = "\t", usecols = [0,1,2,3,4,5,6,7,8,9,10,14])3
+#df = pd.read_csv("summary.tsv", sep = "\t", usecols = [0,1,2,3,4,5,6,7,8,9,10,14])
+df.isna().sum()
+
 
 # one-hot-encoded-sequences.
 from Bio import SeqIO
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
 def one_hot_encoding_aminoacid(df):
-    one_hot_encoded_sequences = pd.get_dummies(df.peptide, prefix="seq")
+    one_hot_encoded_sequences = pd.get_dummies(df.peptide_charge, prefix="seq")
     return one_hot_encoded_sequences
     
 def one_hot_encoding_count(df):
-    return pd.DataFrame([ProteinAnalysis(i).count_amino_acids() for i in df["peptide"]])
+    return pd.DataFrame([ProteinAnalysis(i).count_amino_acids() for i in df["peptide_charge"]])
 
 def one_hot_encoding_positional(df):
-    byposition = df['peptide'].apply(lambda x:pd.Series(list(x)))
+    byposition = df['peptide_charge'].apply(lambda x:pd.Series(list(x)))
     return pd.get_dummies(byposition)
 
 
@@ -146,28 +151,28 @@ one_hot_encoded_sequences = one_hot_encoding_aminoacid(df)
 
 ####
 
-plot_feature_importance(df, title="Random Forest, All C", subplot_index=111, peptide_sequence_encoding=False)
+plot_feature_importance(df, title="All C", subplot_index=111, peptide_sequence_encoding=False)
 # Adjust the spacing between subplots
 plt.tight_layout()
 # Show the plot
 plt.show()
 
 # peptide_sequence by count
-plot_feature_importance(df, title="Random Forest, All C, by count", subplot_index=111, peptide_sequence_encoding=by_count)
+plot_feature_importance(df, title="All C", subplot_index=111, peptide_sequence_encoding=by_count)
 # Adjust the spacing between subplots
 plt.tight_layout()
 # Show the plot
 plt.show()
 
 # peptide sequence by aminoacid
-plot_feature_importance(df, title="Random Forest, All C, all peptide", subplot_index=111, peptide_sequence_encoding=one_hot_encoded_sequences)
+plot_feature_importance(df, title="All C", subplot_index=111, peptide_sequence_encoding=one_hot_encoded_sequences)
 # Adjust the spacing between subplots
 plt.tight_layout()
 # Show the plot
 plt.show()
 
 # peptide sequence by position
-plot_feature_importance(df, title="Random Forest, All C, by position", subplot_index=111, peptide_sequence_encoding=by_position)
+plot_feature_importance(df, title="All C", subplot_index=111, peptide_sequence_encoding=by_position)
 # Adjust the spacing between subplots
 plt.tight_layout()
 # Show the plot
