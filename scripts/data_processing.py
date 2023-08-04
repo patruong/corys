@@ -87,8 +87,8 @@ def preprocess(labeled_df, unlabeled_df, ecoli_std):
     labeled_df = merge_with_ecoli_predecing(labeled_df, ecoli_std).set_index("peptide+charge").sort_index()
     unlabeled_df = merge_with_ecoli_predecing(unlabeled_df, ecoli_std).set_index("peptide+charge").sort_index()
 
-    labeled_df = log2_values(labeled_df)
-    unlabeled_df = log2_values(unlabeled_df)
+    labeled_df = log2_values(labeled_df).reset_index()
+    unlabeled_df = log2_values(unlabeled_df).reset_index()
     return labeled_df, unlabeled_df
 
 
@@ -96,8 +96,28 @@ def preprocess(labeled_df, unlabeled_df, ecoli_std):
 
 def compute_ratio_increase_preceding(labeled_df, unlabeled_df):
     
+    signal_enhancements = []
     for peptide_charge in unlabeled_df.index.unique():
-        print(peptide_charge)
+        if len(labeled_df[labeled_df.index == peptide_charge]) > 1:
+            #print(labeled_df[labeled_df.index == peptide_charge])
+            for i in range(len(unlabeled_df[unlabeled_df.index == peptide_charge])):
+                if not unlabeled_df[unlabeled_df.index == peptide_charge].empty:
+                    val_unlabeled = unlabeled_df[unlabeled_df.index == peptide_charge].iloc[0].copy() # the unlabeled always has only one value!
+                    val_labeled = labeled_df[labeled_df.index == peptide_charge].iloc[i].copy() 
+                    
+                    val = val_labeled["intensity"] / val_labeled["preceding Ecoli int"] * \
+                          val_labeled["ecoli_std_Intensity"] / val_unlabeled["ecoli_std_Intensity"] * \
+                          val_unlabeled["preceding Ecoli int"] / val_unlabeled["intensity"]
+                    signal_enhancements.append(val)
+                else:
+                    raise Exception("More than 1 peptide in the unlabeled file")
+    labeled_df
+                
+
+
+#    unlabeled_df[unlabeled_df.index == peptide_charge].
+    
+    
     
 #    return labeled_df["intensity"] / labeled_df["preceding Ecoli int"] * \
 #    labeled_df["ecoli_std_Intensity"] / unlabeled_df["ecoli_std_Intensity"] * \
@@ -285,9 +305,25 @@ for file in files:
     overlap_dfs.append(count_overlap_df)
     
     labeled_df, unlabeled_df = preprocess(labeled_df, unlabeled_df, ecoli_std)
+    
+    
+    
     df = compute_signal_enhancement(labeled_df, unlabeled_df) # work here
     df["group"] = file
     dfs.append(df)
+
+
+### new code for merging unlabeled and labeled df
+
+for peptide_charge in unlabeled_df["peptide+charge"].unique():
+    print(len(labeled_df[labeled_df["peptide+charge"] == peptide_charge]))
+
+
+### make one dataframe
+### adapt the rest of the code to that one dataframe
+### run the analysis scripts
+
+
 
 df = pd.concat(dfs)
 df = df.reindex(sorted(df.columns), axis=1)
