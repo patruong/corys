@@ -82,47 +82,54 @@ def log2_values(df):
 
 def preprocess(labeled_df, unlabeled_df, ecoli_std):
     ecoli_std = add_peptide_charge_ecoli(ecoli_std).add_prefix("ecoli_std_")
-    labeled_df, unlabeled_df = get_intersecting_unlabelled_labelled_df(labeled_df, unlabeled_df)
+    #labeled_df, unlabeled_df = get_intersecting_unlabelled_labelled_df(labeled_df, unlabeled_df)
 
-    labeled_df = merge_with_ecoli_predecing(labeled_df, ecoli_std).set_index("peptide_charge").sort_index()
-    unlabeled_df = merge_with_ecoli_predecing(unlabeled_df, ecoli_std).set_index("peptide_charge").sort_index()
+    labeled_df = merge_with_ecoli_predecing(labeled_df, ecoli_std).set_index("peptide+charge").sort_index()
+    unlabeled_df = merge_with_ecoli_predecing(unlabeled_df, ecoli_std).set_index("peptide+charge").sort_index()
 
     labeled_df = log2_values(labeled_df)
     unlabeled_df = log2_values(unlabeled_df)
     return labeled_df, unlabeled_df
 
 
+# CHANGE ALL THESE TO FOR-LOOPS ####
+
 def compute_ratio_increase_preceding(labeled_df, unlabeled_df):
-    return labeled_df["intensity"] / labeled_df["preceding Ecoli int"] * \
-    labeled_df["ecoli_std_Intensity"] / unlabeled_df["ecoli_std_Intensity"] * \
-    unlabeled_df["preceding Ecoli int"] / unlabeled_df["intensity"]
+    
+    for peptide_charge in unlabeled_df.index.unique():
+        print(peptide_charge)
+    
+#    return labeled_df["intensity"] / labeled_df["preceding Ecoli int"] * \
+#    labeled_df["ecoli_std_Intensity"] / unlabeled_df["ecoli_std_Intensity"] * \
+#    unlabeled_df["preceding Ecoli int"] / unlabeled_df["intensity"]
 
 def compute_log2_increase_preceding(labeled_df, unlabeled_df):
-    return labeled_df["log2_intensity"] - labeled_df["log2_preceding_Ecoli_int"] + \
-    labeled_df["ecoli_std_log2_intensity"] - unlabeled_df["ecoli_std_log2_intensity"] + \
-    unlabeled_df["log2_preceding_Ecoli_int"] - unlabeled_df["log2_intensity"]
+#    return labeled_df["log2_intensity"] - labeled_df["log2_preceding_Ecoli_int"] + \
+#    labeled_df["ecoli_std_log2_intensity"] - unlabeled_df["ecoli_std_log2_intensity"] + \
+#    unlabeled_df["log2_preceding_Ecoli_int"] - unlabeled_df["log2_intensity"]
 
 def compute_log2_ratio_increase_preceding(labeled_df, unlabeled_df):
-    return labeled_df["log2_intensity"] / labeled_df["log2_preceding_Ecoli_int"] * \
-    labeled_df["ecoli_std_log2_intensity"] / unlabeled_df["ecoli_std_log2_intensity"] * \
-    unlabeled_df["log2_preceding_Ecoli_int"] / unlabeled_df["log2_intensity"]
+#    return labeled_df["log2_intensity"] / labeled_df["log2_preceding_Ecoli_int"] * \
+#    labeled_df["ecoli_std_log2_intensity"] / unlabeled_df["ecoli_std_log2_intensity"] * \
+#    unlabeled_df["log2_preceding_Ecoli_int"] / unlabeled_df["log2_intensity"]
 
 
 def compute_ratio_increase_succeeding(labeled_df, unlabeled_df):
-    return labeled_df["intensity"] / labeled_df["succeeding Ecoli int"] * \
-    labeled_df["ecoli_std_Intensity"] / unlabeled_df["ecoli_std_Intensity"] * \
-    unlabeled_df["succeeding Ecoli int"] / unlabeled_df["intensity"]
+#    return labeled_df["intensity"] / labeled_df["succeeding Ecoli int"] * \
+#    labeled_df["ecoli_std_Intensity"] / unlabeled_df["ecoli_std_Intensity"] * \
+#    unlabeled_df["succeeding Ecoli int"] / unlabeled_df["intensity"]
 
 def compute_log2_increase_succeeding(labeled_df, unlabeled_df):
-    return labeled_df["log2_intensity"] - labeled_df["log2_succeeding_Ecoli_int"] + \
-    labeled_df["ecoli_std_log2_intensity"] - unlabeled_df["ecoli_std_log2_intensity"] + \
-    unlabeled_df["log2_succeeding_Ecoli_int"] - unlabeled_df["log2_intensity"]
+#    return labeled_df["log2_intensity"] - labeled_df["log2_succeeding_Ecoli_int"] + \
+#    labeled_df["ecoli_std_log2_intensity"] - unlabeled_df["ecoli_std_log2_intensity"] + \
+#    unlabeled_df["log2_succeeding_Ecoli_int"] - unlabeled_df["log2_intensity"]
 
 def compute_log2_ratio_increase_succeeding(labeled_df, unlabeled_df):
-    return labeled_df["log2_intensity"] / labeled_df["log2_succeeding_Ecoli_int"] * \
-    labeled_df["ecoli_std_log2_intensity"] / unlabeled_df["ecoli_std_log2_intensity"] * \
-    unlabeled_df["log2_succeeding_Ecoli_int"] / unlabeled_df["log2_intensity"]
+#    return labeled_df["log2_intensity"] / labeled_df["log2_succeeding_Ecoli_int"] * \
+#    labeled_df["ecoli_std_log2_intensity"] / unlabeled_df["ecoli_std_log2_intensity"] * \
+#    unlabeled_df["log2_succeeding_Ecoli_int"] / unlabeled_df["log2_intensity"]
 
+#########################
 
 def compute_signal_enhancement(labeled_df, unlabeled_df):
     df = pd.DataFrame()
@@ -179,6 +186,8 @@ def compute_signal_enhancement(labeled_df, unlabeled_df):
         df["charge"] = labeled_df["charge"]
         df["length"] = labeled_df.peptide.map(lambda x:len(x))
         
+        
+        # below here we need to modify
         df["preceding_ratio_increase"] = compute_ratio_increase_preceding(labeled_df, unlabeled_df)
         df["preceding_log2_increase"] = compute_log2_increase_preceding(labeled_df, unlabeled_df)
         df["preceding_log2_ratio_increase"] = compute_log2_ratio_increase_preceding(labeled_df, unlabeled_df)
@@ -242,10 +251,26 @@ def add_derived_ratios(df):
     
     return df
 
+def count_overlapping_peptides(labeled_df, unlabeled_df):
+    df = pd.concat([unlabeled_df, labeled_df], axis = 0)
+    cols = ["peptide+charge", "labeled_df_count", "unlabeled_df_count"]
+    peptide_charge_row = []
+    labeled_df_count_row = []
+    unlabeled_df_count_row = []
+    for peptide_charge in df["peptide+charge"].unique():
+        peptide_charge_row.append(peptide_charge)
+        labeled_df_count_row.append(len(labeled_df[labeled_df["peptide+charge"] == peptide_charge]))
+        unlabeled_df_count_row.append(len(unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge]))
+    res = pd.DataFrame([peptide_charge_row, labeled_df_count_row, unlabeled_df_count_row], index = cols).T
+    res["overlap"] = (res["labeled_df_count"] > 0)*(res["unlabeled_df_count"] > 0)
+    return res
+
+
 files = ["C1", "C2", "C3", "C4", "C5", "C6"]
 ecoli_std = pd.read_csv("Processed_files/Control_files/ecoli_std.tsv", sep = "\t", index_col = 0)
 
 dfs = []
+overlap_dfs = []
 for file in files:
     labeled_df = pd.read_csv(f"Processed_files/Labeled_files/{file}_Labeled_Hek.tsv", sep = "\t", index_col = 0)
     unlabeled_df = pd.read_csv(f"Processed_files/Unlabeled_files/{file}_Unlabeled_Hek.tsv", sep = "\t", index_col = 0)
@@ -254,14 +279,21 @@ for file in files:
     print(len(intersection(unlabeled_df.peptide, labeled_df.peptide)))
     print()
     
+    
+    count_overlap_df = count_overlapping_peptides(labeled_df, unlabeled_df)
+    count_overlap_df["group"] = file 
+    overlap_dfs.append(count_overlap_df)
+    
     labeled_df, unlabeled_df = preprocess(labeled_df, unlabeled_df, ecoli_std)
-    df = compute_signal_enhancement(labeled_df, unlabeled_df)
+    df = compute_signal_enhancement(labeled_df, unlabeled_df) # work here
     df["group"] = file
     dfs.append(df)
 
 df = pd.concat(dfs)
 df = df.reindex(sorted(df.columns), axis=1)
 
+overlap_dfs = pd.concat(overlap_dfs)
+overlap_dfs.to_csv("overlapping_peptides.tsv", sep = "\t")
 
 
 
