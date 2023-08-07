@@ -91,68 +91,134 @@ def preprocess(labeled_df, unlabeled_df, ecoli_std):
     unlabeled_df = log2_values(unlabeled_df).reset_index()
     return labeled_df, unlabeled_df
 
+def compute_ratio_increase_preceding(df):    
+    return df["labeled_intensity"] / df["labeled_preceding_ecoli_intensity"] * \
+    df["labeled_ecoli_std_intensity"] / df["unlabeled_ecoli_std_intensity"] * \
+    df["unlabeled_preceding_ecoli_intensity"] / df["unlabeled_intensity"]
 
-# CHANGE ALL THESE TO FOR-LOOPS ####
+def compute_log2_increase_preceding(df):
+    return df["labeled_log2_intensity"] - df["labeled_preceding_ecoli_log2_intensity"] + \
+    df["labeled_ecoli_std_log2_intensity"] - df["unlabeled_ecoli_std_log2_intensity"] + \
+    df["unlabeled_preceding_ecoli_log2_intensity"] - df["unlabeled_log2_intensity"]
 
-def compute_ratio_increase_preceding(labeled_df, unlabeled_df):
-    
-    signal_enhancements = []
-    for peptide_charge in unlabeled_df["peptide+charge"].unique():
-        if len(labeled_df[labeled_df["peptide+charge"] == peptide_charge]) > 1:
-            for i in range(len(unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge])):
-                if not unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge].empty:
-                    if np.shape(unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge])[0] == 1:
-                        val_unlabeled = unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge].iloc[0].copy() # the unlabeled always has only one value!
-                        val_labeled = labeled_df[labeled_df["peptide+charge"] == peptide_charge].iloc[i].copy() 
-                        
-                        val = val_labeled["intensity"] / val_labeled["preceding Ecoli int"] * \
-                              val_labeled["ecoli_std_Intensity"] / val_unlabeled["ecoli_std_Intensity"] * \
-                              val_unlabeled["preceding Ecoli int"] / val_unlabeled["intensity"]
-                        signal_enhancements.append(val)
-                    elif np.shape(unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge])[0] > 1:
-                        raise Exception("More than 1 peptide in the unlabeled file")
-                    else:
-                        raise Exception(f"Error check unlabeled_df[unlabeled_df['peptide+charge'] == peptide_charge] for {peptide_charge}")
-    labeled_df
-                
+def compute_log2_ratio_increase_preceding(df):
+    return df["labeled_log2_intensity"] / df["labeled_preceding_ecoli_log2_intensity"] * \
+    df["labeled_ecoli_std_log2_intensity"] / df["unlabeled_ecoli_std_log2_intensity"] * \
+    df["unlabeled_preceding_ecoli_log2_intensity"] / df["unlabeled_log2_intensity"]
 
 
-#    unlabeled_df[unlabeled_df.index == peptide_charge].
-    
-    
-    
-#    return labeled_df["intensity"] / labeled_df["preceding Ecoli int"] * \
-#    labeled_df["ecoli_std_Intensity"] / unlabeled_df["ecoli_std_Intensity"] * \
-#    unlabeled_df["preceding Ecoli int"] / unlabeled_df["intensity"]
+def compute_ratio_increase_succeeding(df):
+    return df["labeled_intensity"] / df["labeled_succeeding_ecoli_intensity"] * \
+    df["labeled_ecoli_std_intensity"] / df["unlabeled_ecoli_std_intensity"] * \
+    df["unlabeled_succeeding_ecoli_intensity"] / df["unlabeled_intensity"]
 
-def compute_log2_increase_preceding(labeled_df, unlabeled_df):
-#    return labeled_df["log2_intensity"] - labeled_df["log2_preceding_Ecoli_int"] + \
-#    labeled_df["ecoli_std_log2_intensity"] - unlabeled_df["ecoli_std_log2_intensity"] + \
-#    unlabeled_df["log2_preceding_Ecoli_int"] - unlabeled_df["log2_intensity"]
+def compute_log2_increase_succeeding(df):
+    return df["labeled_log2_intensity"] - df["labeled_succeeding_ecoli_log2_intensity"] + \
+    df["labeled_ecoli_std_log2_intensity"] - df["unlabeled_ecoli_std_log2_intensity"] + \
+    df["unlabeled_succeeding_ecoli_log2_intensity"] - df["unlabeled_log2_intensity"]
 
-def compute_log2_ratio_increase_preceding(labeled_df, unlabeled_df):
-#    return labeled_df["log2_intensity"] / labeled_df["log2_preceding_Ecoli_int"] * \
-#    labeled_df["ecoli_std_log2_intensity"] / unlabeled_df["ecoli_std_log2_intensity"] * \
-#    unlabeled_df["log2_preceding_Ecoli_int"] / unlabeled_df["log2_intensity"]
-
-
-def compute_ratio_increase_succeeding(labeled_df, unlabeled_df):
-#    return labeled_df["intensity"] / labeled_df["succeeding Ecoli int"] * \
-#    labeled_df["ecoli_std_Intensity"] / unlabeled_df["ecoli_std_Intensity"] * \
-#    unlabeled_df["succeeding Ecoli int"] / unlabeled_df["intensity"]
-
-def compute_log2_increase_succeeding(labeled_df, unlabeled_df):
-#    return labeled_df["log2_intensity"] - labeled_df["log2_succeeding_Ecoli_int"] + \
-#    labeled_df["ecoli_std_log2_intensity"] - unlabeled_df["ecoli_std_log2_intensity"] + \
-#    unlabeled_df["log2_succeeding_Ecoli_int"] - unlabeled_df["log2_intensity"]
-
-def compute_log2_ratio_increase_succeeding(labeled_df, unlabeled_df):
-#    return labeled_df["log2_intensity"] / labeled_df["log2_succeeding_Ecoli_int"] * \
-#    labeled_df["ecoli_std_log2_intensity"] / unlabeled_df["ecoli_std_log2_intensity"] * \
-#    unlabeled_df["log2_succeeding_Ecoli_int"] / unlabeled_df["log2_intensity"]
+def compute_log2_ratio_increase_succeeding(df):
+    return df["labeled_log2_intensity"] / df["labeled_succeeding_ecoli_log2_intensity"] * \
+    df["labeled_ecoli_std_log2_intensity"] / df["unlabeled_ecoli_std_log2_intensity"] * \
+    df["unlabeled_succeeding_ecoli_log2_intensity"] / df["unlabeled_log2_intensity"]
 
 #########################
+# Make a function to merge labeled_d and unlabeled_df so we can keep old functions...
 
+
+def merge_labeled_and_unlabeled_df(labeled_df, unlabeled_df):
+    labeled_df["id"] = labeled_df["peptide+charge"] + labeled_df.index.map(lambda x:"_idx_"+str(x))
+    df = pd.DataFrame()
+    
+    for i in range(np.shape(labeled_df)[0]):
+        peptide_charge = labeled_df["peptide+charge"].iloc[i]
+        
+        if np.shape(unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge])[0] == 1: # append peptide values
+            val = unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge].copy()
+            val["id"] = labeled_df["id"].iloc[i]
+            val = val.add_prefix("unlabeled_")
+            df = pd.concat([df, val])
+        elif np.shape(unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge])[0] == 0: # append NA values
+            val = pd.DataFrame([np.nan for i in unlabeled_df], index=unlabeled_df.columns).T
+            val["id"] = labeled_df["id"].iloc[i]
+            val = val.add_prefix("unlabeled_")
+            df = pd.concat([df, val])
+        else:
+            raise Exception(f"Error check unlabeled_df[unlabeled_df['peptide+charge'] == peptide_charge] for {peptide_charge}")
+    
+    
+    df = pd.merge(labeled_df, df, left_on="id", right_on="unlabeled_id", how = "inner")
+    return df
+
+#####
+
+
+
+def cleanup_df(df):
+    new_df  = pd.DataFrame()
+    
+    new_df["Gravy Score"] = df["Gravy Score"]
+    new_df["ClogP"] = df["ClogP"]
+    new_df["charge"] = df["charge"]
+    new_df["BB Index"] = df["BB Index"]
+    
+    # rt
+    new_df["unlabeled_rt"] = df["unlabeled_rt"]
+    new_df["labeled_rt"] = df["rt"]
+    
+    new_df["unlabeled_preceding_ecoli_rt"] = df["unlabeled_preceding Ecoli rt"]
+    new_df["labeled_preceding_ecoli_rt"] = df["preceding Ecoli rt"]
+        
+    new_df["unlabeled_succeeding_ecoli_rt"] = df["unlabeled_succeeding Ecoli rt"]
+    new_df["labeled_succeeding_ecoli_rt"] = df["succeeding Ecoli rt"]
+    
+    # features from labeled_df
+    new_df["labeled_label_frequency"] = df["label_frequency"]
+    new_df["labeled_label_frequency"] = new_df.labeled_label_frequency.map(lambda x:float(x.replace(",",".")))
+    
+    new_df["labeled_#_of_carbon_added"] = df["# of carbon added"]
+    
+    # mass and mz
+    new_df["unlabeled_mass"] = df["unlabeled_mass"]
+    new_df["labeled_mass"] = df["mass"]
+    
+    new_df["unlabeled_mz"] = df["unlabeled_mz"]
+    new_df["labeled_mz"] = df["mz"]
+    
+    # intensity
+    new_df["unlabeled_intensity"] = df["unlabeled_intensity"]
+    new_df["labeled_intensity"] = df["intensity"]
+    
+    new_df["unlabeled_log2_intensity"] = df["unlabeled_log2_intensity"]
+    new_df["labeled_log2_intensity"] = df["log2_intensity"]
+     
+    new_df["unlabeled_preceding_ecoli_log2_intensity"] = df["unlabeled_log2_preceding_Ecoli_int"]
+    new_df["labeled_preceding_ecoli_log2_intensity"] = df["log2_preceding_Ecoli_int"]
+    
+    new_df["unlabeled_succeeding_ecoli_log2_intensity"] = df["unlabeled_log2_succeeding_Ecoli_int"]
+    new_df["labeled_succeeding_ecoli_log2_intensity"] = df["log2_succeeding_Ecoli_int"]        
+    
+    new_df["unlabeled_preceding_ecoli_intensity"] = df["unlabeled_preceding Ecoli int"]
+    new_df["labeled_preceding_ecoli_intensity"] = df["preceding Ecoli int"]
+     
+    new_df["unlabeled_succeeding_ecoli_intensity"] = df["unlabeled_succeeding Ecoli int"]
+    new_df["labeled_succeeding_ecoli_intensity"] = df["succeeding Ecoli int"]
+     
+    new_df["charge"] = df["charge"]
+    new_df["length"] = df.peptide.map(lambda x:len(x))
+    
+    new_df["peptide+charge"] = df["peptide+charge"]
+    
+    # labeled and unlabeled ecoli std
+    new_df["unlabeled_ecoli_std_log2_intensity"] = df["unlabeled_ecoli_std_log2_intensity"]
+    new_df["labeled_ecoli_std_log2_intensity"] = df["ecoli_std_log2_intensity"]
+    
+    new_df["unlabeled_ecoli_std_intensity"] = df["unlabeled_ecoli_std_Intensity"]
+    new_df["labeled_ecoli_std_intensity"] = df["ecoli_std_Intensity"]    
+    
+    return new_df
+
+"""
 def compute_signal_enhancement(labeled_df, unlabeled_df):
     df = pd.DataFrame()
     # Check so that index are the same!!!
@@ -222,6 +288,18 @@ def compute_signal_enhancement(labeled_df, unlabeled_df):
     else:
         return 0    
 
+"""
+
+def compute_signal_enhancement(df):
+    df["preceding_ratio_increase"] = compute_ratio_increase_preceding(df)
+    df["preceding_log2_increase"] = compute_log2_increase_preceding(df)
+    df["preceding_log2_ratio_increase"] = compute_log2_ratio_increase_preceding(df)
+    
+    
+    df["succeeding_ratio_increase"] = compute_ratio_increase_succeeding(df)
+    df["succeeding_log2_increase"] = compute_log2_increase_succeeding(df)
+    df["succeeding_log2_ratio_increase"] = compute_log2_ratio_increase_succeeding(df)
+    return df
 
 def add_derived_ratios(df):
     # derived ratios 
@@ -270,7 +348,6 @@ def add_derived_ratios(df):
     df["deriv_ratio_mz"] = df["labeled_mz"] / df["unlabeled_mz"]
     df["deriv_delta_mz"] = df["labeled_mz"] - df["unlabeled_mz"]
     
-    
     return df
 
 def count_overlapping_peptides(labeled_df, unlabeled_df):
@@ -308,9 +385,10 @@ for file in files:
     
     labeled_df, unlabeled_df = preprocess(labeled_df, unlabeled_df, ecoli_std)
     
-    
-    
-    df = compute_signal_enhancement(labeled_df, unlabeled_df) # work here
+    df = merge_labeled_and_unlabeled_df(labeled_df, unlabeled_df)
+    df = cleanup_df(df)
+
+    df = compute_signal_enhancement(df)
     df["group"] = file
     dfs.append(df)
 
