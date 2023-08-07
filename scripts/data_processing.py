@@ -97,20 +97,22 @@ def preprocess(labeled_df, unlabeled_df, ecoli_std):
 def compute_ratio_increase_preceding(labeled_df, unlabeled_df):
     
     signal_enhancements = []
-    for peptide_charge in unlabeled_df.index.unique():
-        if len(labeled_df[labeled_df.index == peptide_charge]) > 1:
-            #print(labeled_df[labeled_df.index == peptide_charge])
-            for i in range(len(unlabeled_df[unlabeled_df.index == peptide_charge])):
-                if not unlabeled_df[unlabeled_df.index == peptide_charge].empty:
-                    val_unlabeled = unlabeled_df[unlabeled_df.index == peptide_charge].iloc[0].copy() # the unlabeled always has only one value!
-                    val_labeled = labeled_df[labeled_df.index == peptide_charge].iloc[i].copy() 
-                    
-                    val = val_labeled["intensity"] / val_labeled["preceding Ecoli int"] * \
-                          val_labeled["ecoli_std_Intensity"] / val_unlabeled["ecoli_std_Intensity"] * \
-                          val_unlabeled["preceding Ecoli int"] / val_unlabeled["intensity"]
-                    signal_enhancements.append(val)
-                else:
-                    raise Exception("More than 1 peptide in the unlabeled file")
+    for peptide_charge in unlabeled_df["peptide+charge"].unique():
+        if len(labeled_df[labeled_df["peptide+charge"] == peptide_charge]) > 1:
+            for i in range(len(unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge])):
+                if not unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge].empty:
+                    if np.shape(unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge])[0] == 1:
+                        val_unlabeled = unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge].iloc[0].copy() # the unlabeled always has only one value!
+                        val_labeled = labeled_df[labeled_df["peptide+charge"] == peptide_charge].iloc[i].copy() 
+                        
+                        val = val_labeled["intensity"] / val_labeled["preceding Ecoli int"] * \
+                              val_labeled["ecoli_std_Intensity"] / val_unlabeled["ecoli_std_Intensity"] * \
+                              val_unlabeled["preceding Ecoli int"] / val_unlabeled["intensity"]
+                        signal_enhancements.append(val)
+                    elif np.shape(unlabeled_df[unlabeled_df["peptide+charge"] == peptide_charge])[0] > 1:
+                        raise Exception("More than 1 peptide in the unlabeled file")
+                    else:
+                        raise Exception(f"Error check unlabeled_df[unlabeled_df['peptide+charge'] == peptide_charge] for {peptide_charge}")
     labeled_df
                 
 
